@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>擦除水汽效果</title>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        html,body{
+            width: 100%;
+            height: 100%;
+        }
+        #card{
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-size: 100% 100%;
+            font-size: 100px;
+            line-height: 100%;
+            cursor: default;
+            background: #4bbd3a;
+        }
+        canvas{
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top:0;
+            left:0;
+        }
+    </style>
+</head>
+<body>
+<div id="card">
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    擦玻璃 <br/>
+    <canvas></canvas>
+</div>
+<script>
+
+    var _canvas = document.querySelector('canvas'),
+        _target = document.querySelector('#card'),
+        _height = _target.offsetHeight,
+        _width = _target.offsetWidth,
+        _top = _target.offsetTop,
+        _left = _target.offsetLeft,
+        _x = 0,
+        _y = 0,
+        _r = _width*(window.devicePixelRatio)/20,
+        _halfR = _r/2,
+        _color = 'green',
+        _roll = Math.PI*2,
+        _moveNode = null,
+        _mask = 'asset/images/a.jpg',
+        _isMouseDown = false,
+        ctx = _canvas.getContext('2d');
+
+
+    _canvas.width = _width;
+    _canvas.height = _height;
+
+    //添加遮罩
+    ctx.beginPath();
+//    drawMask(ctx,_mask);
+    setFrozen(ctx);
+
+    //刮开遮罩
+    _target.addEventListener('mousedown',mouseDown,false);
+    document.addEventListener('mousemove',mouseMove,false);
+    _target.addEventListener('mouseup',mouseUp,false);
+    _target.addEventListener('touchstart',mouseDown,false);
+    document.addEventListener('touchmove',mouseMove,false);
+    _target.addEventListener('touchend',mouseUp,false);
+
+    function mouseDown(e){
+        _isMouseDown = true;
+        _x = (e.pageX || e.touches[0].pageX) - _left;
+        _y = (e.pageY || e.touches[0].pageY) - _top;
+        _moveNode = ctx;
+        ctx.beginPath();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.strokeStyle = _color;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth= _r;
+    }
+    function mouseMove(e){
+        if(!_isMouseDown){return}
+        e.preventDefault();
+        var _thisX = (e.pageX || e.touches[0].pageX),
+            _thisY = (e.pageY || e.touches[0].pageY);
+        ctx.lineTo(_thisX,_thisY);
+        ctx.stroke();
+    }
+    function mouseUp(e){
+        console.log(getPercent(_moveNode)+'%');
+        _isMouseDown = false;
+    }
+
+    function drawMask(canvas,src){
+        //判断是否图片 todo--添加容错
+        if(['png','jpg','mp4','ogg'].indexOf(src.split('.').pop()) != -1){
+            var _img = new Image();
+            _img.onload = function(){
+                canvas.drawImage(_img,0,0,_width,_height);
+                canvas.closePath();
+                _img = null;
+            };
+            _img.src = src;
+        }else{
+            canvas.fillStyle = src;
+            canvas.fillRect(0,0,_width,_height);
+            canvas.closePath();
+        }
+    }
+
+    //计算刮开面积
+    function getPercent(canvas){
+        var _thisCtx = canvas.getImageData(0,0,_width,_height),
+            _data = _thisCtx.data,
+            _pixArr = 0,
+            _dataLen = _data.length;
+        for(var i = 0;i < _dataLen;i += 4){
+            if(_data[i+3] < 128){
+                _pixArr++;
+            }
+        }
+        return ((_pixArr/(_dataLen/4))*100).toFixed(2);
+    }
+
+
+    //添加雾气
+    function setFrozen(canvas){
+        canvas.fillStyle = 'rgba(255,255,255,0.6)';
+        canvas.shadowBlur = 20;
+        canvas.shadowColor = 'rgba(255,255,255,0.4)';
+        canvas.beginPath();
+        canvas.fillRect(0,0,_width,_height);
+        canvas.beginPath();
+        for(var i = 0;i<20;i++){
+            var _startX = _width*Math.random();
+            var _startY = _height*Math.random();
+            groupFrozen(canvas,_startX,_startY);
+        }
+        canvas.fill();
+        canvas.closePath();
+    }
+
+    function groupFrozen(canvas,x,y){
+        for(var i = 0;i < 100;i+=10){
+            canvas.moveTo(_width*Math.random(),_height*Math.random());
+            canvas.arc(x+i*Math.random(),y+(i*2),_width/20,0,_roll);
+        }
+    }
+
+</script>
+</body>
+</html>
